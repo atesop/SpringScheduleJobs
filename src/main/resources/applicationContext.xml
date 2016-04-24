@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context" xmlns:task="http://www.springframework.org/schema/task"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd">
+    <!-- 数据库相关的配置变量 -->
+    <context:property-placeholder location="classpath:conf/jdbc.properties,classpath:conf/bonecp.properties" />
+    <!-- 数据源 及 数据源连接池的配置 -->
+    <bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+        <property name="jdbcUrl" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+        <property name="driverClass" value="${jdbc.driverClassName}" />
+        <property name="maxConnectionsPerPartition" value="${bonecp.maxConnectionsPerPartition}" />
+        <property name="minConnectionsPerPartition" value="${bonecp.minConnectionsPerPartition}" />
+        <property name="acquireIncrement" value="${bonecp.acquireIncrement}" />
+        <property name="partitionCount" value="${bonecp.partitionCount}" />
+        <property name="idleConnectionTestPeriod" value="${bonecp.idleConnectionTestPeriod}" />
+        <property name="idleMaxAge" value="${bonecp.idleMaxAge}" />
+        <property name="statementsCacheSize" value="${bonecp.statementsCacheSize}" />
+        <property name="releaseHelperThreads" value="${bonecp.releaseHelperThreads}" />
+    </bean>
+
+    <!-- jdbc 事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager" >
+        <property name="dataSource" ref="dataSource" />
+        <property name="nestedTransactionAllowed" value="true"></property>
+    </bean>
+
+    <!-- (Annotation方式配置services)enable component scanning (beware that this does not enable mapper scanning!) -->
+    <context:component-scan base-package="com.atesop.spring.service, com.atesop.spring.dao,com.atesop.spring.job" />
+    <!-- enable autowire -->
+    <context:annotation-config />
+    
+    <task:annotation-driven />
+
+    <!-- enable transaction demarcation with annotations -->
+    <tx:annotation-driven />
+
+    <!-- define the SqlSessionFactory, notice that configLocation is not needed when you use MapperFactoryBean -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:conf/mybatis-config.xml" />
+        <property name="mapperLocations">
+			<list>
+				<value>classpath*:mapper/*-mapper.xml</value>
+			</list>
+		</property>
+    </bean>
+
+    <!-- scan for mappers and let them be autowired -->
+    <bean name="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+    	<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!-- Mapper接口所在包名，Spring会自动查找其下的Mapper -->
+        <property name="basePackage" value="com.atesop.spring.dao" />
+    </bean>
+
+</beans>
